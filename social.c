@@ -229,3 +229,232 @@ void free_queue(Queue *q) {
     while (c) { PostNode *t=c; c=c->next; free(t); }
     free(q);
 }
+
+/* Load all users into hash table */
+HashTable *load_users(void) {
+    HashTable *ht = create_hash_table();
+    FILE *f = fopen(USERS_FILE,"r");
+    if (!f) return ht;
+    char line[MAX_USERNAME + MAX_PASSWORD + 4];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        char *pipe = strchr(line,'|');
+        if (pipe) { *pipe='\0'; ht_insert(ht, line, pipe+1); }
+    }
+    fclose(f);
+    return ht;
+}
+
+/* Append new user */
+int save_user(const char *username, const char *password) {
+    FILE *f = fopen(USERS_FILE,"a");
+    if (!f) return 0;
+    fprintf(f,"%s|%s\n", username, password);
+    fclose(f);
+    return 1;
+}
+
+/* Load all posts into queue (FIFO preserved) */
+Queue *load_posts(void) {
+    Queue *q = create_queue();
+    FILE *f = fopen(POSTS_FILE,"r");
+    if (!f) return q;
+    char line[MAX_LINE];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        /* Format: username|text|imagefile */
+        char *p1 = strchr(line,'|');
+        if (!p1) continue;
+        *p1='\0';
+        char *p2 = strchr(p1+1,'|');
+        if (p2) {
+            *p2='\0';
+            enqueue(q, line, p1+1, p2+1);
+        } else {
+            enqueue(q, line, p1+1, "");
+        }
+    }
+    fclose(f);
+    return q;
+}
+
+/* Append post */
+int save_post(const char *user, const char *text, const char *img) {
+    FILE *f = fopen(POSTS_FILE,"a");
+    if (!f) return 0;
+    fprintf(f,"%s|%s|%s\n", user, text, img ? img : "");
+    fclose(f);
+    return 1;
+}
+
+/* Remove the LAST post by a given user (for undo) */
+int remove_last_post_by_user(const char *username) {
+    FILE *f = fopen(POSTS_FILE,"r");
+    if (!f) return 0;
+
+    static char lines[MAX_FILE_LINES][MAX_LINE];
+    int count=0;
+    while (count<MAX_FILE_LINES && fgets(lines[count],MAX_LINE,f))
+        lines[count++][strcspn(lines[count-1],"\r\n")]='\0';
+    fclose(f);
+
+    int found=-1, i;
+    for (i=count-1; i>=0; i--) {
+        char tmp[MAX_LINE];
+        strncpy(tmp,lines[i],MAX_LINE-1);
+        char *pipe=strchr(tmp,'|');
+        if (pipe) { *pipe='\0'; if (strcmp(tmp,username)==0){ found=i; break; } }
+    }
+    if (found<0) return 0;
+
+    f = fopen(POSTS_FILE,"w");
+    if (!f) return 0;
+    for (i=0; i<count; i++)
+        if (i!=found && lines[i][0]) fprintf(f,"%s\n",lines[i]);
+    fclose(f);
+    return 1;
+}
+
+/* Get the last post details by a user (for stack undo display) */
+int get_last_post_by_user(const char *username,
+                           char *text_out, char *img_out) {
+    text_out[0]=img_out[0]='\0';
+    FILE *f=fopen(POSTS_FILE,"r");
+    if (!f) return 0;
+    char line[MAX_LINE];
+    int found=0;
+    while (fgets(line,sizeof(line),f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        char *p1=strchr(line,'|');
+        if (!p1) continue;
+        *p1='\0';
+        if (strcmp(line,username)==0) {
+            char *p2=strchr(p1+1,'|');
+            if (p2) { *p2='\0'; strncpy(text_out,p1+1,MAX_POST_TEXT-1); strncpy(img_out,p2+1,MAX_IMAGE_NAME-1); }
+            else     {           strncpy(text_out,p1+1,MAX_POST_TEXT-1); img_out[0]='\0'; }
+            found=1;
+        }
+    }
+    fclose(f);
+    return found;
+}
+
+/* Load friends into graph */
+Graph *load_friends(void) {
+    Graph *g = create_graph();
+    FILE *f = fopen(FRIENDS_FILE,"r");
+    if (!f) return g;
+    char line[MAX_LINE];
+    while (fgets(line,sizeof(line),f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        char *pipe=strchr(line,'|');
+        if (pipe) { *pipe='\0'; add_friendship_graph(g,line,pipe+1); }
+    }
+    fclose(f);
+    return g;
+}
+
+
+int save_friendship(const char *u1, const char *u2) {
+    FILE *f=fopen(FRIENDS_FILE,"a");
+    if (!f) return 0;
+    fprintf(f,"%s|%s\n",u1,u2);
+    fclose(f);
+    return 1;
+}
+
+int friendship_in_file(const char *u1, const char *u2) {
+    FILE *f=fopen(FRIENDS_FILE,"r");
+    if (!f) return 0;
+    char line[MAX_LINE];
+    while (fgets(line,sizeof(line),f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        char *p=strchr(line,'|');
+        if (p) {
+            *p='\0';
+            if ((strcmp(line,u1)==0&&strcmp(p+1,u2)==0)||
+                (strcmp(line,u2)==0&&strcmp(p+1,u1)==0))
+            { fclose(f); return 1; }
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
+
+
+void generate_token(const char *username, char *token, int maxlen) {
+    static unsigned long counter = 0; counter++;
+    unsigned long h=5381; const char *s=username;
+    while (*s) h=((h<<5)+h)+(unsigned char)*s++;
+    unsigned long t=(unsigned long)time(NULL);
+    snprintf(token, maxlen, "%lx%lx%lx", h^t, t, counter);
+}
+
+void save_session(const char *token, const char *username) {
+    FILE *f=fopen(SESSIONS_FILE,"a");
+    if (!f) return;
+    fprintf(f,"%s|%s\n",token,username);
+    fclose(f);
+}
+
+
+int check_auth(char *username_out, char *token_out) {
+    username_out[0] = '\0';
+    if (token_out) token_out[0]='\0';
+
+    const char *cookie = getenv("HTTP_COOKIE");
+    if (!cookie) return 0;
+
+    /* Find sds_session=VALUE in the cookie header */
+    char token[128]={0};
+    const char *p = strstr(cookie,"sds_session=");
+    if (!p) return 0;
+    p+=12;
+    int i=0;
+    while (*p && *p!=';' && *p!=' ' && i<127) token[i++]=*p++;
+    token[i]='\0';
+    if (!token[0]) return 0;
+
+    /* Look up token in sessions.txt */
+    FILE *f=fopen(SESSIONS_FILE,"r");
+    if (!f) return 0;
+    char line[256];
+    int found=0;
+    while (fgets(line,sizeof(line),f)) {
+        line[strcspn(line,"\r\n")]='\0';
+        char *pipe=strchr(line,'|');
+        if (pipe) {
+            *pipe='\0';
+            if (strcmp(line,token)==0) {
+                strncpy(username_out,pipe+1,MAX_USERNAME-1);
+                username_out[MAX_USERNAME-1]='\0';
+                if (token_out) strncpy(token_out,token,127);
+                found=1; break;
+            }
+        }
+    }
+    fclose(f);
+    return found;
+}
+
+void clear_session(const char *token) {
+    FILE *f=fopen(SESSIONS_FILE,"r");
+    if (!f) return;
+    static char lines[MAX_SESSIONS][200];
+    int count=0;
+    while (count<MAX_SESSIONS && fgets(lines[count],200,f)) {
+        lines[count][strcspn(lines[count],"\r\n")]='\0';
+        if (lines[count][0]) count++;
+    }
+    fclose(f);
+    f=fopen(SESSIONS_FILE,"w");
+    if (!f) return;
+    int i;
+    for (i=0; i<count; i++) {
+        char tmp[200]; strncpy(tmp,lines[i],199);
+        char *pipe=strchr(tmp,'|');
+        if (pipe) { *pipe='\0'; if (strcmp(tmp,token)!=0) fprintf(f,"%s|%s\n",tmp,pipe+1); }
+    }
+    fclose(f);
+}
