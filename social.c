@@ -114,3 +114,118 @@ void free_hash_table(HashTable *ht) {
     }
     free(ht);
 }
+typedef struct AdjNode {
+    char            username[MAX_USERNAME];
+    struct AdjNode *next;
+} AdjNode;
+
+typedef struct GraphNode {
+    char             username[MAX_USERNAME];
+    AdjNode         *adjList;
+    struct GraphNode*next;
+} GraphNode;
+
+typedef struct { GraphNode *head; } Graph;
+
+Graph *create_graph(void) {
+    Graph *g = (Graph *)malloc(sizeof(Graph));
+    if (!g) return NULL;
+    g->head = NULL;
+    return g;
+}
+
+GraphNode *find_graph_node(Graph *g, const char *u) {
+    GraphNode *c = g->head;
+    while (c) { if (strcmp(c->username, u)==0) return c; c=c->next; }
+    return NULL;
+}
+
+GraphNode *add_graph_node(Graph *g, const char *u) {
+    GraphNode *n = find_graph_node(g, u);
+    if (n) return n;
+    n = (GraphNode *)malloc(sizeof(GraphNode));
+    if (!n) return NULL;
+    strncpy(n->username, u, MAX_USERNAME-1);
+    n->username[MAX_USERNAME-1] = '\0';
+    n->adjList = NULL;
+    n->next = g->head;
+    g->head = n;
+    return n;
+}
+
+static void add_adj_edge(GraphNode *node, const char *nb) {
+    AdjNode *c = node->adjList;
+    while (c) { if (strcmp(c->username,nb)==0) return; c=c->next; }
+    AdjNode *a = (AdjNode *)malloc(sizeof(AdjNode));
+    if (!a) return;
+    strncpy(a->username, nb, MAX_USERNAME-1);
+    a->username[MAX_USERNAME-1] = '\0';
+    a->next = node->adjList;
+    node->adjList = a;
+}
+
+void add_friendship_graph(Graph *g, const char *u1, const char *u2) {
+    GraphNode *n1 = add_graph_node(g, u1);
+    GraphNode *n2 = add_graph_node(g, u2);
+    if (n1 && n2) { add_adj_edge(n1, u2); add_adj_edge(n2, u1); }
+}
+
+int are_friends(Graph *g, const char *u1, const char *u2) {
+    GraphNode *n1 = find_graph_node(g, u1);
+    if (!n1) return 0;
+    AdjNode *a = n1->adjList;
+    while (a) { if (strcmp(a->username,u2)==0) return 1; a=a->next; }
+    return 0;
+}
+
+void free_graph(Graph *g) {
+    GraphNode *c = g->head;
+    while (c) {
+        AdjNode *a = c->adjList;
+        while (a) { AdjNode *t=a; a=a->next; free(t); }
+        GraphNode *t = c; c=c->next; free(t);
+    }
+    free(g);
+}
+
+
+
+typedef struct PostNode {
+    char             username[MAX_USERNAME];
+    char             text[MAX_POST_TEXT];
+    char             image[MAX_IMAGE_NAME];
+    struct PostNode *next;
+} PostNode;
+
+typedef struct {
+    PostNode *front;
+    PostNode *rear;
+    int       size;
+} Queue;
+
+Queue *create_queue(void) {
+    Queue *q = (Queue *)malloc(sizeof(Queue));
+    if (!q) return NULL;
+    q->front = q->rear = NULL;
+    q->size = 0;
+    return q;
+}
+
+void enqueue(Queue *q, const char *user, const char *text, const char *img) {
+    PostNode *n = (PostNode *)malloc(sizeof(PostNode));
+    if (!n) return;
+    strncpy(n->username, user, MAX_USERNAME-1); n->username[MAX_USERNAME-1]='\0';
+    strncpy(n->text,     text, MAX_POST_TEXT-1); n->text[MAX_POST_TEXT-1]='\0';
+    if (img) { strncpy(n->image, img, MAX_IMAGE_NAME-1); n->image[MAX_IMAGE_NAME-1]='\0'; }
+    else n->image[0] = '\0';
+    n->next = NULL;
+    if (!q->rear) { q->front = q->rear = n; }
+    else          { q->rear->next = n; q->rear = n; }
+    q->size++;
+}
+
+void free_queue(Queue *q) {
+    PostNode *c = q->front;
+    while (c) { PostNode *t=c; c=c->next; free(t); }
+    free(q);
+}
