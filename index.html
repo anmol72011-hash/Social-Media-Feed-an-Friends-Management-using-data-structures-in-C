@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SocialDS — Social Media Feed &amp; Friend Management</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       TOP BAR
+  ════════════════════════════════════════════════ -->
+  <header class="topbar">
+    <span class="logo">&#128101; SocialDS</span>
+    <span class="subtitle">Data Structures Project &mdash; MCA Final Year</span>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       HERO BANNER
+  ════════════════════════════════════════════════ -->
+  <section class="hero">
+    <h1>Social Media Feed &amp; Friend Management</h1>
+    <p class="hero-sub">
+      Demonstrating <strong>Hash Table</strong> &bull;
+      <strong>Graph</strong> &bull; <strong>Queue</strong> &bull;
+      <strong>Stack</strong> &bull; <strong>File Handling</strong> &bull;
+      <strong>CGI in C</strong>
+    </p>
+
+    <!-- Data Structure badges -->
+    <div class="ds-badges">
+      <span class="ds-badge ht">&#128200; Hash Table</span>
+      <span class="ds-badge gr">&#128279; Graph</span>
+      <span class="ds-badge qu">&#128240; Queue</span>
+      <span class="ds-badge st">&#8635; Stack</span>
+    </div>
+  </section>
+
+  <main class="container">
+
+    <!-- ═══════════════════════════════════════════
+         GRID OF FORMS
+    ════════════════════════════════════════════ -->
+    <div class="cards-grid">
+
+      <!-- CARD 1: Create User ─────────────────── -->
+      <div class="card form-card">
+        <div class="card-icon ht-bg">&#128100;</div>
+        <h2>Create User</h2>
+        <p class="card-desc">
+          Registers a new user. Username is stored in a
+          <strong>Hash Table</strong> using the <em>djb2</em> hash function
+          with separate-chaining collision handling.
+        </p>
+
+        <div class="form-group">
+          <label for="cu-username">Username</label>
+          <input
+            id="cu-username"
+            type="text"
+            placeholder="e.g. alice"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            title="Letters, digits and underscores only"
+            required
+          />
+          <small>Letters, digits, underscores only (max 32 chars)</small>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="submitAction('create_user',
+            { username: val('cu-username') })"
+        >
+          &#128100; Register User
+        </button>
+      </div>
+
+      <!-- CARD 2: Add Post ────────────────────── -->
+      <div class="card form-card">
+        <div class="card-icon qu-bg">&#128221;</div>
+        <h2>Add Post</h2>
+        <p class="card-desc">
+          Publishes a new post, enqueued at the <strong>REAR</strong> of the
+          <strong>FIFO Queue</strong>. Feed shows posts in
+          chronological order from the FRONT.
+        </p>
+
+        <div class="form-group">
+          <label for="ap-username">Username</label>
+          <input
+            id="ap-username"
+            type="text"
+            placeholder="e.g. alice"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="ap-text">Post Text</label>
+          <textarea
+            id="ap-text"
+            placeholder="What's on your mind?"
+            maxlength="480"
+            rows="3"
+            required
+          ></textarea>
+          <small id="ap-counter">0 / 480 characters</small>
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="submitAction('add_post',
+            { username: val('ap-username'), text: val('ap-text') })"
+        >
+          &#128221; Publish Post
+        </button>
+      </div>
+
+      <!-- CARD 3: Add Friend ──────────────────── -->
+      <div class="card form-card">
+        <div class="card-icon gr-bg">&#128279;</div>
+        <h2>Add Friend</h2>
+        <p class="card-desc">
+          Creates a mutual friendship — an <strong>undirected edge</strong>
+          in the <strong>Graph</strong> (adjacency list representation).
+          Both users see each other's posts.
+        </p>
+
+        <div class="form-group">
+          <label for="af-user1">Your Username</label>
+          <input
+            id="af-user1"
+            type="text"
+            placeholder="e.g. alice"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="af-user2">Friend's Username</label>
+          <input
+            id="af-user2"
+            type="text"
+            placeholder="e.g. bob"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            required
+          />
+        </div>
+
+        <button
+          class="btn btn-primary"
+          onclick="submitAction('add_friend',
+            { user1: val('af-user1'), user2: val('af-user2') })"
+        >
+          &#128279; Connect Friends
+        </button>
+      </div>
+
+      <!-- CARD 4: View Feed ──────────────────── -->
+      <div class="card form-card">
+        <div class="card-icon qu-bg">&#128240;</div>
+        <h2>View Feed</h2>
+        <p class="card-desc">
+          Displays posts from the user and their friends.
+          The <strong>Queue</strong> is traversed FIFO; the
+          <strong>Graph</strong> filters which posts are visible.
+        </p>
+
+        <div class="form-group">
+          <label for="vf-username">Your Username</label>
+          <input
+            id="vf-username"
+            type="text"
+            placeholder="e.g. alice"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            required
+          />
+        </div>
+
+        <button
+          class="btn btn-success"
+          onclick="submitAction('view_feed',
+            { username: val('vf-username') })"
+        >
+          &#128240; View My Feed
+        </button>
+      </div>
+
+      <!-- CARD 5: Undo Last Post ─────────────── -->
+      <div class="card form-card">
+        <div class="card-icon st-bg">&#8635;</div>
+        <h2>Undo Last Post</h2>
+        <p class="card-desc">
+          Uses a <strong>Stack</strong> (linked list) to find and
+          remove the user's most recent post — classic LIFO undo
+          pattern.
+        </p>
+
+        <div class="form-group">
+          <label for="ud-username">Username</label>
+          <input
+            id="ud-username"
+            type="text"
+            placeholder="e.g. alice"
+            maxlength="32"
+            pattern="[A-Za-z0-9_]+"
+            required
+          />
+        </div>
+
+        <button
+          class="btn btn-danger"
+          onclick="submitAction('undo',
+            { username: val('ud-username') })"
+        >
+          &#8635; Undo Last Post
+        </button>
+      </div>
+
+      <!-- CARD 6: List All Users ─────────────── -->
+      <div class="card form-card">
+        <div class="card-icon ht-bg">&#128202;</div>
+        <h2>All Users (Hash Table)</h2>
+        <p class="card-desc">
+          Displays every registered user with their
+          <strong>hash bucket index</strong> — useful for understanding
+          how the hash table distributes keys.
+        </p>
+
+        <button
+          class="btn btn-outline"
+          onclick="go('list_users', {})"
+        >
+          &#128202; View Hash Table
+        </button>
+      </div>
+
+    </div><!-- /cards-grid -->
+
+
+    <!-- ═══════════════════════════════════════════
+         DATA STRUCTURES REFERENCE TABLE
+    ════════════════════════════════════════════ -->
+    <section class="ds-reference">
+      <h2>&#128218; Data Structures Used</h2>
+      <div class="ref-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Data Structure</th>
+              <th>Why It&apos;s Used</th>
+              <th>Time Complexity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>User Storage</td>
+              <td><span class="badge ht">Hash Table</span></td>
+              <td>Fast O(1) lookup, duplicate prevention</td>
+              <td>Insert / Search: O(1) avg</td>
+            </tr>
+            <tr>
+              <td>Friend Network</td>
+              <td><span class="badge gr">Graph (Adj. List)</span></td>
+              <td>Model mutual relationships as undirected edges</td>
+              <td>Add edge: O(1) &bull; Check: O(degree)</td>
+            </tr>
+            <tr>
+              <td>Post Feed</td>
+              <td><span class="badge qu">Queue (FIFO)</span></td>
+              <td>Chronological display, oldest post first</td>
+              <td>Enqueue / Dequeue: O(1)</td>
+            </tr>
+            <tr>
+              <td>Undo System</td>
+              <td><span class="badge st">Stack (LIFO)</span></td>
+              <td>Most recent action can be reversed</td>
+              <td>Push / Pop: O(1)</td>
+            </tr>
+            <tr>
+              <td>Persistence</td>
+              <td>Text Files</td>
+              <td>users.txt &bull; posts.txt &bull; friends.txt</td>
+              <td>Sequential Read/Write</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main><!-- /container -->
+
+  <footer class="footer">
+    SocialDS &mdash; MCA Final Year Project &mdash;
+    Data Structures in C &mdash; CGI / Apache / XAMPP
+  </footer>
+
+
+  <!-- ═══════════════════════════════════════════════
+       JAVASCRIPT — form helpers + validation
+  ════════════════════════════════════════════════ -->
+  <script>
+    /* Read and trim an input/textarea value by element id */
+    function val(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    /* Build query string and navigate to CGI */
+    function go(action, params) {
+      var qs = 'action=' + encodeURIComponent(action);
+      for (var k in params) {
+        qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      }
+      window.location.href = '/cgi-bin/socialds/social.exe?' + qs;
+    }
+
+    /* Validate before submitting */
+    function submitAction(action, params) {
+      var usernameFields = ['username', 'user1', 'user2'];
+      for (var i = 0; i < usernameFields.length; i++) {
+        var key = usernameFields[i];
+        if (params.hasOwnProperty(key)) {
+          var v = params[key];
+          if (!v) {
+            alert('Please enter: ' + key);
+            return;
+          }
+          if (!/^[A-Za-z0-9_]{1,32}$/.test(v)) {
+            alert(key + ': only letters, digits and underscores allowed (max 32).');
+            return;
+          }
+        }
+      }
+      if (params.hasOwnProperty('text') && !params.text) {
+        alert('Post text cannot be empty.');
+        return;
+      }
+      if (params.user1 && params.user2 && params.user1 === params.user2) {
+        alert('You cannot add yourself as a friend.');
+        return;
+      }
+      go(action, params);
+    }
+
+    /* Live character counter for post textarea */
+    var apText = document.getElementById('ap-text');
+    var apCounter = document.getElementById('ap-counter');
+    if (apText && apCounter) {
+      apText.addEventListener('input', function () {
+        var len = apText.value.length;
+        apCounter.textContent = len + ' / 480 characters';
+        apCounter.style.color = len > 400 ? '#e74c3c' : '#888';
+      });
+    }
+  </script>
+
+</body>
+</html>
